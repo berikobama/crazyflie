@@ -36,7 +36,7 @@ class Tracker:
 	    ctr = (-1,-1)
 	    if centroid_x != None and centroid_y != None:
 	        ctr = (centroid_x, centroid_y)
-	        cv2.circle(image, ctr, 4, (0,0,255))
+	        cv2.circle(image, ctr, 10, (0,0,255))
 	    self.last_pos = ctr
 	    return ctr,image
 
@@ -45,15 +45,24 @@ class Tracker:
 		return self.track(image)
 
 def worker_thread(tracker, label,data_queue):
-	divide = 3
+	divide = 0
+	mean = Queue()
 	while(1):
 		ctr,image = tracker.getAbsolutePosition()
-		if divide is 3:
+		mean.put(ctr)
+		if divide is 10:
 			queue.put(image)
-			data_queue.put(ctr)
+			x,y = 0,0
+			for i in range(0,divide):
+				a = mean.get()
+				x+=a[0]
+				y+=a[1]
+			x /=divide
+			y/=divide
+			data_queue.put((x,y))
 			divide = 0
 		divide += 1
-		time.sleep (25.0 / 1000.0) # aprox 30fps <- nope
+		time.sleep (15.0 / 1000.0) # aprox 30fps <- nope
 
 def update_image(image_label, queue):
    frame = queue.get()
@@ -165,9 +174,9 @@ if __name__ == '__main__':
 	label = tk.Label(root)
 	label.pack(fill="both", expand="yes")
 	start_new_thread(worker_thread,(tracker,label,data_queue,))
-	drone = DroneHandler(data_queue)
-	drone.findme()
-	# start_new_thread(drone.connectFirst(),())
-	drone.connectFirst()
+	# drone = DroneHandler(data_queue)
+	# drone.findme()
+	# # start_new_thread(drone.connectFirst(),())
+	# drone.connectFirst()
 	root.after(0, func=lambda: update_all(root, label, queue))
 	root.mainloop()

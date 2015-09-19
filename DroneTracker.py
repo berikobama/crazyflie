@@ -7,7 +7,7 @@ import time
 from multiprocessing import Process, Queue
 from Queue import Empty
 import time, sys
-sys.path.append("/Users/blank/crazyflie/crazyflie-clients-python/examples../lib")
+sys.path.append("/Users/blank/crazyflie/crazyflie-clients-python/examples../lib") # Change this to your path
 import cflib
 from cflib.crazyflie import Crazyflie
 import logging
@@ -120,8 +120,8 @@ class DroneHandler():
 		out_x = 0
 		out_y = 0
 		Kp = 4
-		Ki = 0
-		Kd = 2
+		Ki = 1
+		Kd = 4
 		dt = 1
 		while(1):
 			a = data.get()
@@ -134,6 +134,8 @@ class DroneHandler():
 				dev_y = (error_y - error_y_old) / dt
 				out_x = Kp*error_x + Ki*int_x + Kd*dev_x
 				out_y = Kp*error_y + 1.3*int_y + Kd*dev_y
+				error_x_old = error_x
+				error_y_old = error_y
 
 				thrust = 6*-out_y
 				roll = -0.01*out_x
@@ -150,8 +152,7 @@ class DroneHandler():
 				else:
 					pass
 			self._cf.commander.send_setpoint(roll, 0, 0, thrust)
- 			print roll
-
+ 			print str(thrust) + "		|		" + str(roll)
 #550, 280
 
 if __name__ == '__main__':

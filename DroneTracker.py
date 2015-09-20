@@ -11,38 +11,8 @@ sys.path.append("/Users/blank/crazyflie/crazyflie-clients-python/examples../lib"
 import cflib
 from cflib.crazyflie import Crazyflie
 import logging
+from Tracker import Tracker
 
-
-class Tracker:
-	def __init__(self):
-		self.capture = cv2.VideoCapture(0)
-		self.color_mid = np.array([0,0,0])
-		for i in range(1,10): 
-			okay, image = self.capture.read() #init camera
-
-	def track(self,image):
-	    blur = cv2.GaussianBlur(image, (5,5),0)
-	    hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-	    lower_color = np.array([40,70,70])
-	    upper_color = np.array([80,200,200])
-	    mask = cv2.inRange(hsv, lower_color, upper_color)
-	    bmask = cv2.GaussianBlur(mask, (5,5),0)
-	    moments = cv2.moments(bmask)
-	    m00 = moments['m00']
-	    centroid_x, centroid_y = None, None
-	    if m00 != 0:
-	        centroid_x = int(moments['m10']/m00)
-	        centroid_y = int(moments['m01']/m00)
-	    ctr = (-1,-1)
-	    if centroid_x != None and centroid_y != None:
-	        ctr = (centroid_x, centroid_y)
-	        cv2.circle(image, ctr, 10, (0,0,255))
-	    self.last_pos = ctr
-	    return ctr,image
-
-	def getAbsolutePosition(self):
-		okay, image = self.capture.read()
-		return self.track(image)
 
 def worker_thread(tracker, label,data_queue):
 	divide = 0

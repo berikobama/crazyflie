@@ -24,7 +24,18 @@ class Tracker:
 		return ctr
 
 	def motionBased(self, image): # returns the boundingboxes of areas in motion
-		
+		return -1
+
+	def findCircles(self, image, minDist): #finds circles, warning: this takes a lot of cpu
+		img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+		gray = cv2.GaussianBlur(img, (5,5),5)
+		circles = cv2.HoughCircles(gray, cv2.cv.CV_HOUGH_GRADIENT, 1.2, mindDist)
+		if circles is not None:
+			circles = np.round(circles[0, :]).astype("int")
+			return circles  #this is a list
+		else:
+			return None
+
 
 	def track(self,image):
 	    ctr_colorbased = self.colorBased(image,np.array([40,70,70]),np.array([80,200,200])) # calibrated for bright green

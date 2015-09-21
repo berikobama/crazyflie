@@ -11,28 +11,13 @@ sys.path.append("/Users/blank/crazyflie/crazyflie-clients-python/examples../lib"
 import cflib
 from cflib.crazyflie import Crazyflie
 import logging
-from Tracker import Tracker
+from Util import Tracker
 
 
 def worker_thread(tracker, label,data_queue):
-	divide = 0
-	mean = Queue()
-	while(1):
-		ctr,image = tracker.getAbsolutePosition()
-		mean.put(ctr)
-		if divide is 10:
-			queue.put(image)
-			x,y = 0,0
-			for i in range(0,divide):
-				a = mean.get()
-				x+=a[0]
-				y+=a[1]
-			x /=divide
-			y/=divide
-			data_queue.put((x,y))
-			divide = 0
-		divide += 1
-		time.sleep (15.0 / 1000.0) # aprox 30fps <- nope
+	while 1:
+		time.sleep(0.1)
+		#print tracker.get_current_point()
 
 def update_image(image_label, queue):
    frame = queue.get()
@@ -43,10 +28,10 @@ def update_image(image_label, queue):
    image_label._image_cache = b  # avoid garbage collection
    root.update()
 
-def update_all(root, image_label, queue):
-	if not queue.empty():
-   		update_image(image_label, queue)
-   	root.after(0, func=lambda: update_all(root, image_label, queue))
+def update_all(root, image_label, image_queue):
+	if not image_queue.empty():
+   		update_image(image_label, image_queue)
+   	root.after(0, func=lambda: update_all(root, image_label, image_queue))
 
 class DroneHandler():
 	def __init__(self, queue):
@@ -135,9 +120,10 @@ class DroneHandler():
 #550, 280
 
 if __name__ == '__main__':
-	queue = Queue()
 	data_queue = Queue()
 	tracker = Tracker()
+	tracker.start_cont_tracker()
+	image_queue=tracker.get_current_image()
 	root = tk.Tk()
 	root.geometry("1200x700")
 	root.bind('<Escape>', lambda e: root.quit())
@@ -148,5 +134,5 @@ if __name__ == '__main__':
 	# drone.findme()
 	# # start_new_thread(drone.connectFirst(),())
 	# drone.connectFirst()
-	root.after(0, func=lambda: update_all(root, label, queue))
+	root.after(0, func=lambda: update_all(root, label, image_queue))
 	root.mainloop()

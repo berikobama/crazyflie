@@ -17,7 +17,7 @@ from Util import Tracker
 def worker_thread(tracker, label,data_queue):
 	while 1:
 		time.sleep(0.1)
-		#print tracker.get_current_point()
+		data_queue.put(tracker.get_current_point())
 
 def update_image(image_label, queue):
    frame = queue.get()
@@ -96,7 +96,7 @@ class DroneHandler():
 				int_y = int_y + error_y*dt
 				dev_x = (error_x - error_x_old) / dt
 				dev_y = (error_y - error_y_old) / dt
-				out_x = Kp*error_x + Ki*int_x + Kd*dev_x
+				out_x = 2*error_x + Ki*int_x + 2*dev_x
 				out_y = Kp*error_y + 1.3*int_y + Kd*dev_y
 				error_x_old = error_x
 				error_y_old = error_y
@@ -105,8 +105,8 @@ class DroneHandler():
 				roll = -0.01*out_x
  				if thrust < 10000:
 					thrust = 10000
-				elif thrust > 50000:
-					thrust = 50000
+				elif thrust > 55000:
+					thrust = 55000
 				else:
 					pass
 				if roll < -20:
@@ -115,7 +115,7 @@ class DroneHandler():
 					roll = 20
 				else:
 					pass
-			self._cf.commander.send_setpoint(roll, 0, 0, thrust)
+			self._cf.commander.send_setpoint(0, 0, 0, thrust)
  			print str(thrust) + "		|		" + str(roll)
 #550, 280
 
@@ -130,9 +130,9 @@ if __name__ == '__main__':
 	label = tk.Label(root)
 	label.pack(fill="both", expand="yes")
 	start_new_thread(worker_thread,(tracker,label,data_queue,))
-	# drone = DroneHandler(data_queue)
-	# drone.findme()
+	#drone = DroneHandler(data_queue)
+	#drone.findme()
 	# # start_new_thread(drone.connectFirst(),())
-	# drone.connectFirst()
+	#drone.connectFirst()
 	root.after(0, func=lambda: update_all(root, label, image_queue))
 	root.mainloop()

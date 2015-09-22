@@ -5,6 +5,11 @@ from threading import Thread
 from multiprocessing import Queue
 import time
 import imutils
+import time, sys
+sys.path.append("/Users/blank/crazyflie/crazyflie-clients-python/examples../lib") # Change this to your path
+import logging
+import cflib
+from cflib.crazyflie import Crazyflie
 
 class Tracker:
 	def __init__(self):
@@ -143,3 +148,98 @@ class Tracker:
 	def getAbsolutePosition(self):
 		okay, image = self.capture.read()
 		return self.track(image)
+
+class DroneHandler():
+	def __init__(self, queue):
+		self.data_queue = queue
+		cflib.crtp.init_drivers(enable_debug_driver=False)
+		self._cf = Crazyflie()
+		logging.basicConfig(level=logging.ERROR)
+		self.roll = 0
+		self.yaw = 0
+		self.pitch = 0
+		self.thrust = 0
+	def findme(self):
+		print "Scanning interfaces for Crazyflies..."
+		self.available = cflib.crtp.scan_interfaces()
+		print self.available
+		self.target_x, self.target_y = 550, 280
+
+	def connectFirst(self):
+		self._cf.connected.add_callback(self._connected)
+		self._cf.disconnected.add_callback(self._disconnected)
+		self._cf.connection_failed.add_callback(self._connection_failed)
+		self._cf.connection_lost.add_callback(self._connection_lost)
+		self._cf.open_link(self.available[0][0])
+		print "Connecting to %s" % self.available[0][0]
+
+	def _connected(self, link_uri):
+		print "Unlocking copter"
+		self._cf.commander.send_setpoint(0, 0, 0, 0)
+		print "Starting controller"
+		start_new_thread(self.controllCopter,(self.data_queue,))
+		start_new_thread(self.update_Copter,())
+		print "connected"
+
+	def _connection_failed(self, link_uri, msg):
+		print "Connection to %s failed: %s" % (link_uri, msg)
+
+	def _connection_lost(self, link_uri, msg):
+		print "Connection to %s lost: %s" % (link_uri, msg)
+
+	def _disconnected(self, link_uri):
+		print "Disconnected from %s" % self.link_uri
+
+	def update_Copter(self):
+		#self._cf.commander.send_setpoint(roll, pitch, yawrate, thrust)
+		while 1:
+			self._cf.commander.send_setpoint(self.roll, self.pitch, self.yawrate, self.thrust)
+			time.sleep(0.05)
+
+	def controllCopter(self, data):
+		roll = 0
+		thrust = 11000
+		error_y = 0
+		error_y_old = 0
+		error_x = 0
+		error_x_old = 0
+		int_x = 0
+		int_y = 0
+		dev_x = 0
+		dev_y = 0
+		out_x = 0
+		out_y = 0
+		Kp = 4
+		Ki = 1
+		Kd = 4
+		dt = 1
+		while(1):
+			a = data.get()
+			if not a == (-1,-1):
+				error_x = self.target_x - a[0]
+				error_y = self.target_y - a[1]
+				int_x = int_x + error_x*dt
+				int_y = int_y + error_y*dt
+				dev_x = (error_x - error_x_old) / dt
+				dev_y = (error_y - error_y_old) / dt
+				out_x = 2*error_x + Ki*int_x + 2*dev_x
+				out_y = Kp*error_y + 1.3*int_y + Kd*dev_y
+				error_x_old = error_x
+				error_y_old = error_y
+
+				self.thrust = 6*-out_y
+				self.roll = -0.01*out_x
+ 				if thrust < 10000:
+					thrust = 10000
+				elif thrust > 55000:
+					thrust = 55000
+				else:
+					pass
+				if roll < -20:
+					out = -20
+				elif roll > 20:
+					roll = 20
+				else:
+					pass
+ 			print str(thrust) + "		|		" + str(roll)
+#550, 280

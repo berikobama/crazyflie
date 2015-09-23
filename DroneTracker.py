@@ -13,13 +13,11 @@ from Util import DroneHandler
 
 def worker_thread(tracker, label,data_queue):
 	while 1:
-		time.sleep(0.1)
+		time.sleep(0.01)
 		data_queue.put(tracker.get_current_point())
 
-def update_image(image_label, queue,):
-   frame = queue.get()
-   im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-   im =frame
+def update_image(image_label, queue):
+   im = queue.get()
    a = Image.fromarray(im)
    a = a.resize((650, 365), Image.NEAREST)
    b = ImageTk.PhotoImage(image=a)
@@ -27,11 +25,10 @@ def update_image(image_label, queue,):
    image_label._image_cache = b  # avoid garbage collection
    root.update()
 
-def update_all(root, image_label,image_label2, queue,queue2):
+def update_all(root, image_label, queue):
 	if not image_queue.empty():
-   		update_image(image_label, image_queue)
-   		update_image(image_label2, image_queue2)
-   	root.after(0, func=lambda: update_all(root, image_label,image_label2, queue,queue2))
+		update_image(image_label, image_queue)
+   	root.after(0, func=lambda: update_all(root, image_label, queue))
 
 def key(event):
 	#TODO redo me!
@@ -77,10 +74,10 @@ def key_release(event):
 if __name__ == '__main__':
 	data_queue = Queue()
 
-	tracker = Tracker()
+	tracker = Tracker(mode = "2D")
 	tracker.start_cont_tracker()
 	image_queue=tracker.get_current_image()
-	image_queue2=tracker.get_current_image2()
+	#image_queue2=tracker.get_current_image2()
 	drone = DroneHandler(data_queue)
 
 	root = tk.Tk()
@@ -89,14 +86,14 @@ if __name__ == '__main__':
 	root.bind("<Key>", key)
 	root.bind("<KeyRelease>", key_release)
 	label = tk.Label(root)
-	label2 = tk.Label(root)
+	#label2 = tk.Label(root)
 	label.pack(side = tk.LEFT)
-	label2.pack(side = tk.RIGHT)
+	#label2.pack(side = tk.RIGHT)
 
 	#start_new_thread(worker_thread,(tracker,label,data_queue,))
 
 	#drone.findme()
 	#drone.connectFirst()
 
-	root.after(0, func=lambda: update_all(root, label,label2, image_queue,image_queue2))
+	root.after(0, func=lambda: update_all(root, label, image_queue))
 	root.mainloop()

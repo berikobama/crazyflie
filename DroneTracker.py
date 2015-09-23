@@ -32,38 +32,45 @@ def update_all(root, image_label, image_queue):
    	root.after(0, func=lambda: update_all(root, image_label, image_queue))
 
 def key(event):
-	# self.yaw = 0
-	# self.thrust = 0
+	#TODO redo me!
 	if event.char is 'w':
 		drone.pitch = 10
 	elif event.char is 'a':
 		drone.roll = 10
+	if event.char is 'q':
+		drone.yaw = -10
+	elif event.char is 'e':
+		drone.yw = 10
 	elif event.char is 's':
 		drone.pitch = -10
 	elif event.char is 'd':
 		drone.roll = -10
+	elif event.char is ' ':
+		drone.thrust = 40000
 	elif event.char is 'p':
-		drone.thrust = 0
+		drone.is_engaged = not drone.is_engaged
 		exit()
 	else:
-		print "asd"
+		pass
 
 def key_release(event):
-	# self.yaw = 0
-	# self.thrust = 0
+	#TODO redo me!
 	if event.char is 'w':
 		drone.pitch = 0
 	elif event.char is 'a':
 		drone.roll = 0
+	if event.char is 'q':
+		drone.yaw = 0
+	elif event.char is 'e':
+		drone.yw = 0
 	elif event.char is 's':
 		drone.pitch = 0
 	elif event.char is 'd':
 		drone.roll = 0
-	elif event.char is 'p':
+	elif event.char is ' ':
 		drone.thrust = 0
-		exit()
 	else:
-		print "asd"
+		pass
 
 if __name__ == '__main__':
 	data_queue = Queue()
@@ -82,7 +89,7 @@ if __name__ == '__main__':
 	label = tk.Label(root)
 	label.pack(fill="both", expand="yes")
 
-	start_new_thread(worker_thread,(tracker,label,data_queue,))
+	#start_new_thread(worker_thread,(tracker,label,data_queue,))
 
 	#drone.findme()
 	#drone.connectFirst()

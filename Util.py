@@ -10,6 +10,7 @@ sys.path.append("/Users/blank/crazyflie/crazyflie-clients-python/examples../lib"
 import logging
 import cflib
 from cflib.crazyflie import Crazyflie
+from scipy.cluster.vq import vq, kmeans, whiten
 
 class Tracker:
 	def __init__(self):
@@ -42,7 +43,7 @@ class Tracker:
 	def findCircles(self, image, minDist): 	#finds circles, warning: this takes a lot of cpu
 		img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 		gray = cv2.GaussianBlur(img, (5,5),5)
-		circles = cv2.HoughCircles(gray, cv2.cv.CV_HOUGH_GRADIENT, 1.2, minDist)
+		circles = cv2.HoughCircles(gray, cv2.cv.CV_HOUGH_GRADIENT, 1.5, minDist)
 		if circles is not None:
 			circles = np.round(circles[0, :]).astype("int")
 			return circles  				#this is a list
@@ -70,13 +71,13 @@ class Tracker:
 			# 3. step: motion tracking:
 			working_copy = image
 			gray = cv2.cvtColor(working_copy, cv2.COLOR_BGR2GRAY)
-			gray = cv2.GaussianBlur(gray, (5, 5), 0)
+			gray = cv2.GaussianBlur(gray, (13, 13), 0)
 			if firstFrame is None:
 				firstFrame = gray
 			frameDelta = cv2.absdiff(firstFrame, gray)
 			thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
-			thresh = cv2.erode(thresh, None, 10)
-			thresh = cv2.dilate(thresh, None, 18)
+			#thresh = cv2.erode(thresh, None, 10)
+			#thresh = cv2.dilate(thresh, None, 18)
 			(contour, _) = cv2.findContours(thresh.copy(), cv.CV_RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 			
 			if counter == 3:
@@ -95,14 +96,18 @@ class Tracker:
 				if circles is not None:
 					for (x, y, r) in circles:
 						cv2.circle(image, (x, y), r, (0, 255, 0), 4)
-				cnts = list()
+				#cnts = list()
 				for c in contour:
 					area = cv2.contourArea(c)
 					(x, y, w, h) = cv2.boundingRect(c)
+					#cnts.append((x+h/2, y+w/2))
 					cv2.circle(image, (x+h/2, y+w/2), 10, (255, 0, 0), 2)
+
 				cv2.circle(image, self.current_point, 20, (255,0,255),4)
+				cv2.putText(image, str(self.current_point), (100,100), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 2, np.array([0,0,0]), 3, 8)
 				if self.current_image.empty():
 					self.current_image.put(image)
+
 			counter +=1
 
 	def in_circle(self,center_x, center_y, radius, x, y):
@@ -159,6 +164,7 @@ class DroneHandler():
 		self.yaw = 0
 		self.pitch = 0
 		self.thrust = 0
+		self.is_engaged = False
 	def findme(self):
 		print "Scanning interfaces for Crazyflies..."
 		self.available = cflib.crtp.scan_interfaces()
@@ -193,7 +199,10 @@ class DroneHandler():
 	def update_Copter(self):
 		#self._cf.commander.send_setpoint(roll, pitch, yawrate, thrust)
 		while 1:
-			self._cf.commander.send_setpoint(self.roll, self.pitch, self.yawrate, self.thrust)
+			if self.is_engaged:
+				self._cf.commander.send_setpoint(self.roll, self.pitch, self.yawrate, self.thrust)
+			else:
+				self._cf.commander.send_setpoint(0,0,0,0)
 			time.sleep(0.05)
 
 	def controllCopter(self, data):

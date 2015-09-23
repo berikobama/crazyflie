@@ -16,20 +16,22 @@ def worker_thread(tracker, label,data_queue):
 		time.sleep(0.1)
 		data_queue.put(tracker.get_current_point())
 
-def update_image(image_label, queue):
+def update_image(image_label, queue,):
    frame = queue.get()
-   #im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+   im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
    im =frame
    a = Image.fromarray(im)
+   a = a.resize((650, 365), Image.NEAREST)
    b = ImageTk.PhotoImage(image=a)
    image_label.configure(image=b)
    image_label._image_cache = b  # avoid garbage collection
    root.update()
 
-def update_all(root, image_label, image_queue):
+def update_all(root, image_label,image_label2, queue,queue2):
 	if not image_queue.empty():
    		update_image(image_label, image_queue)
-   	root.after(0, func=lambda: update_all(root, image_label, image_queue))
+   		update_image(image_label2, image_queue2)
+   	root.after(0, func=lambda: update_all(root, image_label,image_label2, queue,queue2))
 
 def key(event):
 	#TODO redo me!
@@ -78,21 +80,23 @@ if __name__ == '__main__':
 	tracker = Tracker()
 	tracker.start_cont_tracker()
 	image_queue=tracker.get_current_image()
-
+	image_queue2=tracker.get_current_image2()
 	drone = DroneHandler(data_queue)
 
 	root = tk.Tk()
-	root.geometry("1300x750")
+	root.geometry("1300x400")
 	root.bind('<Escape>', lambda e: exit())
 	root.bind("<Key>", key)
 	root.bind("<KeyRelease>", key_release)
 	label = tk.Label(root)
-	label.pack(fill="both", expand="yes")
+	label2 = tk.Label(root)
+	label.pack(side = tk.LEFT)
+	label2.pack(side = tk.RIGHT)
 
 	#start_new_thread(worker_thread,(tracker,label,data_queue,))
 
 	#drone.findme()
 	#drone.connectFirst()
 
-	root.after(0, func=lambda: update_all(root, label, image_queue))
+	root.after(0, func=lambda: update_all(root, label,label2, image_queue,image_queue2))
 	root.mainloop()
